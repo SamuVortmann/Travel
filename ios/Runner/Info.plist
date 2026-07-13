@@ -26,6 +26,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>O Chronicle usa a câmera para registrar as fotos dos seus momentos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O Chronicle acessa a galeria para adicionar fotos aos seus momentos.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>O Chronicle usa o GPS para salvar onde cada momento aconteceu.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

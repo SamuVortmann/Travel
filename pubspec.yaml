@@ -9,10 +9,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  sqflite: ^2.3.3
-  sqflite_common_ffi: ^2.3.3   # ← esta estava faltando
-  path: ^1.9.0
-  image_picker: ^1.1.2
+  image_picker: any
+  path: any
+  geolocator: any
+  sqflite: any
+  sqflite_common_ffi: any
   
   
 dev_dependencies:
