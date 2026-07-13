@@ -28,26 +28,41 @@ class _HomeScreenState extends State<HomeScreen> {
   // Which tab is active: 0=Home, 1=Timeline(Albums), 2=fab, 3=Map, 4=Insights
   // We skip index 2 (the FAB slot) — real tabs are 0,1,3,4
   int _tab = 0;
-  int _revision = 0;
+  final List<int> _revisions = List<int>.filled(5, 0);
 
-  // Navigate to a new screen and reload when back
-  void _go(Widget page) {
-    Future.microtask(() async {
+  void _refreshTabAfterNavigation(int tab) {
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
-      if (mounted) setState(() => _revision++);
+      setState(() => _revisions[tab]++);
     });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
-  void _openNovoRegistro() {
-    Future.microtask(() async {
-      if (!mounted) return;
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const NovoRegistroScreen()),
-      );
-      if (mounted) setState(() => _revision++);
-    });
+  // Navigate to a new screen and reload when back
+  Future<void> _go(Widget page) async {
+    if (!mounted) return;
+    final sourceTab = _tab;
+    final route = MaterialPageRoute<void>(builder: (_) => page);
+    await Navigator.push(context, route);
+
+    // Navigator.push completes when pop starts. On desktop, rebuilding the
+    // page underneath during the reverse transition can recursively update
+    // MouseTracker. Wait until the route is fully removed, then rebuild in a
+    // fresh frame.
+    await route.completed;
+    _refreshTabAfterNavigation(sourceTab);
+  }
+
+  Future<void> _openNovoRegistro() async {
+    if (!mounted) return;
+    final sourceTab = _tab;
+    final route = MaterialPageRoute<void>(
+      builder: (_) => const NovoRegistroScreen(),
+    );
+    await Navigator.push(context, route);
+    await route.completed;
+    _refreshTabAfterNavigation(sourceTab);
   }
 
   @override
@@ -59,14 +74,17 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(
         index: _tab,
         children: [
-          _HomeTab(key: ValueKey('home-$_revision'), onNavigate: _go), // tab 0
+          _HomeTab(
+            key: ValueKey('home-${_revisions[0]}'),
+            onNavigate: _go,
+          ), // tab 0
           _AlbunsTab(
-            key: ValueKey('albums-$_revision'),
+            key: ValueKey('albums-${_revisions[1]}'),
             onNavigate: _go,
           ), // tab 1
           const SizedBox.shrink(), // tab 2 = FAB placeholder (never shown)
-          LocationsScreen(key: ValueKey('locations-$_revision')), // tab 3
-          InsightsScreen(key: ValueKey('insights-$_revision')), // tab 4
+          LocationsScreen(key: ValueKey('locations-${_revisions[3]}')), // tab 3
+          InsightsScreen(key: ValueKey('insights-${_revisions[4]}')), // tab 4
         ],
       ),
 
@@ -115,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
         behavior: HitTestBehavior.opaque,
         onTap: () => setState(() {
           _tab = index;
-          _revision++;
+          _revisions[index]++;
         }),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

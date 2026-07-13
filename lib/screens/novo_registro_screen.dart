@@ -1,6 +1,5 @@
 // lib/screens/novo_registro_screen.dart
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
@@ -227,21 +226,6 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              // "No album" option
-              ListTile(
-                leading: const Icon(
-                  Icons.do_not_disturb_alt_outlined,
-                  color: _t3,
-                ),
-                title: const Text('Sem álbum'),
-                trailing: _album == null
-                    ? const Icon(Icons.check, color: _green)
-                    : null,
-                onTap: () {
-                  setState(() => _album = null);
-                  Navigator.of(sheetCtx).pop();
-                },
-              ),
               // One row per album
               ..._albuns.map(
                 (a) => ListTile(
@@ -369,9 +353,15 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
       return;
     }
 
-    if (_latitude == null || _longitude == null) {
-      await _useCurrentLocation();
-      if (_latitude == null || _longitude == null) return;
+    final album = _album;
+    if (album == null || album.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione um álbum para o momento.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
 
     setState(() => _saving = true);
@@ -380,7 +370,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
         _fotos,
       ).timeout(const Duration(seconds: 30));
       final r = Registro(
-        albumId: _album?.id,
+        albumId: album.id,
         titulo: titulo,
         descricao: _descCtrl.text.trim(),
         local: _localCtrl.text.trim(),
@@ -389,7 +379,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
         dataHora: _dt.toIso8601String(),
         humor: _humor,
         tags: '',
-        album: _album?.nome ?? '',
+        album: album.nome,
         fotos: persistedPhotos,
       );
 
@@ -560,11 +550,28 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: Image.file(
-                                  File(_fotos[i].path),
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
+                                child: FutureBuilder(
+                                  future: _fotos[i].readAsBytes(),
+                                  builder: (context, snapshot) {
+                                    final bytes = snapshot.data;
+                                    if (bytes == null) {
+                                      return const SizedBox(
+                                        width: 100,
+                                        height: 100,
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    return Image.memory(
+                                      bytes,
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                    );
+                                  },
                                 ),
                               ),
                               Positioned(
@@ -739,7 +746,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
                     child: GestureDetector(
                       onTap: _showAlbumPicker,
                       child: Text(
-                        _album?.nome ?? 'Sem álbum',
+                        _album?.nome ?? 'Selecionar álbum (obrigatório)',
                         style: TextStyle(
                           fontSize: 14,
                           color: _album != null ? _t1 : _t3,

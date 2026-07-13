@@ -1,9 +1,10 @@
-import 'dart:io'; // needed for Platform.isWindows etc.
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart'; // needed for kIsWeb
 import 'package:path/path.dart'; // helps build file paths
 import 'package:sqflite/sqflite.dart'; // the SQLite plugin
 import 'package:sqflite_common_ffi/sqflite_ffi.dart'; // SQLite for Desktop
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart'; // SQLite for Web
+import 'package:travel/utils/legacy_photo_reader.dart';
 
 // ============================================================
 // MODEL: Album
@@ -166,7 +167,13 @@ class DatabaseHelper {
   // On Android/iOS: sqflite works out of the box, no setup needed.
   // On Windows/Linux/macOS: we need to use the FFI (desktop) version.
   static void initFfiIfNeeded() {
-    if (kIsWeb || Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    if (kIsWeb) {
+      databaseFactory = databaseFactoryFfiWeb;
+      return;
+    }
+    if (defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
       sqfliteFfiInit(); // initialize the desktop SQLite
       databaseFactory = databaseFactoryFfi; // tell sqflite to use it
     }
@@ -530,10 +537,10 @@ class DatabaseHelper {
         final path = row['caminho'] as String?;
         if (path == null || path.isEmpty) continue;
         try {
-          final bytes = await File(
+          final bytes = await readLegacyPhoto(
             path,
-          ).readAsBytes().timeout(const Duration(seconds: 3));
-          if (bytes.isEmpty) continue;
+          ).timeout(const Duration(seconds: 3));
+          if (bytes == null || bytes.isEmpty) continue;
           photos.add(bytes);
           await db.update(
             'fotos',
