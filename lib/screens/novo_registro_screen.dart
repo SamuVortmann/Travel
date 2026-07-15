@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:travel/utils/photo_storage.dart';
-import 'package:travel/database/database_helper.dart';
+import 'package:chronicle/utils/photo_storage.dart';
+import 'package:chronicle/database/database_helper.dart';
 
 const _green = Color(0xFF2E9E50);
 const _greenLight = Color(0xFFE6F4EC);
@@ -16,6 +16,7 @@ const _t2 = Color(0xFF6C6C70);
 const _t3 = Color(0xFFAEAEB2);
 const _moods = ['😊', '😄', '😐', '😢', '😍'];
 
+/// Formulário responsável por criar e persistir um novo momento.
 class NovoRegistroScreen extends StatefulWidget {
   final Album? albumPreSelecionado;
   const NovoRegistroScreen({super.key, this.albumPreSelecionado});
@@ -39,7 +40,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
   double? _latitude;
   double? _longitude;
 
-  // Single ImagePicker instance — reused for both camera and gallery
+  // Uma única instância do ImagePicker é reutilizada pela câmera e pela galeria.
   final _picker = ImagePicker();
 
   @override
@@ -50,6 +51,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
   }
 
   Future<void> _initAlbuns() async {
+    // Carrega as opções de álbum e sincroniza uma seleção recebida pela tela.
     final a = await DatabaseHelper.instance.listarAlbuns();
     if (!mounted) return;
     setState(() {
@@ -69,10 +71,10 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
     super.dispose();
   }
 
-  // ── Camera: takes a single photo ─────────────────────────────────────────
+  // ── Câmera: captura uma única foto ───────────────────────────────────────
   Future<void> _pickCamera() async {
-    // IMPORTANT: on some Android/iOS devices, pickImage can throw if the
-    // camera permission is not granted. The try/catch handles that.
+    // Em alguns aparelhos, pickImage pode falhar sem permissão para a câmera;
+    // o bloco try/catch trata essa situação.
     try {
       final foto = await _picker.pickImage(
         source: ImageSource.camera,
@@ -81,7 +83,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
         maxHeight: 1600,
         preferredCameraDevice: CameraDevice.rear,
       );
-      // Always check mounted after any async operation
+      // Confirma que o widget continua montado após a operação assíncrona.
       if (!mounted || foto == null) return;
       if (_fotos.length < 6) setState(() => _fotos.add(foto));
     } catch (e) {
@@ -95,7 +97,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
     }
   }
 
-  // ── Gallery: pick one or multiple photos ─────────────────────────────────
+  // ── Galeria: seleciona uma ou várias fotos ───────────────────────────────
   Future<void> _pickGaleria() async {
     try {
       final fotos = await _picker.pickMultiImage(
@@ -105,7 +107,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
       );
       if (!mounted) return;
       if (fotos.isNotEmpty) {
-        // Only add up to the remaining slots (max 6 total)
+        // Preenche apenas as vagas restantes, respeitando o limite de seis fotos.
         setState(() => _fotos.addAll(fotos.take(6 - _fotos.length)));
       }
     } catch (e) {
@@ -119,13 +121,12 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
     }
   }
 
-  // ── Photo source picker sheet ────────────────────────────────────────────
-  // KEY FIX: we capture 'context' into a local variable BEFORE the
-  // Future.microtask. Inside the sheet's builder we use the sheet's
-  // own Navigator (Navigator.of(sheetCtx)) so the pop closes the sheet,
-  // not the parent route. Then we call the async photo functions after.
+  // ── Painel de escolha da origem da foto ──────────────────────────────────
+  // O contexto da tela é capturado antes da microtarefa. Dentro do painel,
+  // usa-se seu próprio Navigator para fechá-lo sem remover a rota principal;
+  // só depois é iniciada a seleção assíncrona da foto.
   void _showPhotoOptions() {
-    final parentContext = context; // capture parent context
+    final parentContext = context; // Preserva o contexto da tela principal.
 
     Future.microtask(() async {
       if (!parentContext.mounted) return;
@@ -151,19 +152,19 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
               ),
               const SizedBox(height: 8),
 
-              // Camera option
+              // Opção de câmera.
               ListTile(
                 leading: const Icon(Icons.camera_alt_outlined, color: _green),
                 title: const Text('Tirar foto com a câmera'),
                 onTap: () {
-                  // Close the sheet using the SHEET's navigator context
+                  // Fecha o painel usando o contexto de navegação do próprio painel.
                   Navigator.of(sheetCtx).pop();
-                  // Then open camera — the sheet is now fully closed
+                  // Abre a câmera somente depois que o painel foi fechado.
                   _pickCamera();
                 },
               ),
 
-              // Gallery option
+              // Opção de galeria.
               ListTile(
                 leading: const Icon(
                   Icons.photo_library_outlined,
@@ -184,7 +185,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
     });
   }
 
-  // ── Album picker sheet ───────────────────────────────────────────────────
+  // ── Painel de seleção do álbum ───────────────────────────────────────────
   void _showAlbumPicker() {
     final parentContext = context;
 
@@ -226,7 +227,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              // One row per album
+              // Exibe uma linha para cada álbum.
               ..._albuns.map(
                 (a) => ListTile(
                   leading: const Icon(Icons.photo_album_outlined, color: _t3),
@@ -248,7 +249,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
     });
   }
 
-  // ── Date + time picker ───────────────────────────────────────────────────
+  // ── Seletores de data e hora ─────────────────────────────────────────────
   void _pickDate() {
     Future.microtask(() async {
       if (!mounted) return;
@@ -289,6 +290,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
   }
 
   Future<void> _useCurrentLocation() async {
+    // Valida serviço e permissão antes de capturar as coordenadas atuais.
     if (_locating) return;
     setState(() => _locating = true);
     try {
@@ -340,8 +342,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
     }
   }
 
-  // ── Save ─────────────────────────────────────────────────────────────────
+  // ── Salvamento ───────────────────────────────────────────────────────────
   Future<void> _save() async {
+    // Valida o formulário, converte as fotos e grava o registro no banco.
     final titulo = _tituloCtrl.text.trim();
     if (titulo.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -395,7 +398,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
         ),
       );
 
-      // Defer the pop so it runs outside the current pointer event frame
+      // Adia o retorno para fora do quadro atual do evento de ponteiro.
       Future.microtask(() {
         if (mounted) Navigator.pop(context, true);
       });
@@ -412,6 +415,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
   }
 
   String _fmtDt() {
+    // Formata a data escolhida sem depender da configuração regional do aparelho.
     const m = [
       'Jan',
       'Fev',
@@ -431,7 +435,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
     return '${_dt.day} ${m[_dt.month - 1]} ${_dt.year} · $h:$min';
   }
 
-  // ── Build ────────────────────────────────────────────────────────────────
+  // ── Construção da interface ──────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -440,7 +444,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
         backgroundColor: _green,
         foregroundColor: Colors.white,
         elevation: 0,
-        // GestureDetector avoids the Windows mouse tracker bug
+        // GestureDetector evita uma falha no rastreamento do mouse no Windows.
         leading: GestureDetector(
           onTap: () => Future.microtask(() {
             if (mounted) Navigator.maybePop(context);
@@ -484,9 +488,9 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Photo area ─────────────────────────────────────────
+                  // ── Área de fotos ──────────────────────────────────────
                   if (_fotos.isEmpty)
-                    // Empty state: big tap area to add photos
+                    // Estado vazio: área ampla para adicionar fotos.
                     GestureDetector(
                       onTap: _showPhotoOptions,
                       child: Container(
@@ -518,7 +522,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
                       ),
                     )
                   else
-                    // Photo thumbnails + add-more button
+                    // Miniaturas das fotos e botão para adicionar mais.
                     SizedBox(
                       height: 100,
                       child: ListView.separated(
@@ -526,7 +530,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
                         itemCount: _fotos.length + (_fotos.length < 6 ? 1 : 0),
                         separatorBuilder: (_, __) => const SizedBox(width: 8),
                         itemBuilder: (_, i) {
-                          // Last slot = "add more" button
+                          // A última posição contém o botão de adicionar.
                           if (i == _fotos.length) {
                             return GestureDetector(
                               onTap: _showPhotoOptions,
@@ -545,7 +549,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
                               ),
                             );
                           }
-                          // Photo thumbnail with remove button
+                          // Miniatura da foto com botão de remoção.
                           return Stack(
                             children: [
                               ClipRRect(
@@ -603,7 +607,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
 
                   const SizedBox(height: 16),
 
-                  // ── Title ──────────────────────────────────────────────
+                  // ── Título ─────────────────────────────────────────────
                   TextField(
                     controller: _tituloCtrl,
                     style: const TextStyle(
@@ -624,7 +628,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
                     ),
                   ),
 
-                  // ── Description ────────────────────────────────────────
+                  // ── Descrição ──────────────────────────────────────────
                   TextField(
                     controller: _descCtrl,
                     maxLines: 4,
@@ -646,7 +650,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
                   const Divider(color: _border),
                   const SizedBox(height: 8),
 
-                  // ── Mood picker ────────────────────────────────────────
+                  // ── Seletor de humor ───────────────────────────────────
                   const Text(
                     'Como você se sentiu?',
                     style: TextStyle(
@@ -688,7 +692,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
 
                   const SizedBox(height: 16),
 
-                  // ── Location ───────────────────────────────────────────
+                  // ── Localização ─────────────────────────────────────────
                   _metaRow(
                     icon: Icons.location_on_outlined,
                     child: TextField(
@@ -727,7 +731,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
                   ),
                   const SizedBox(height: 4),
 
-                  // ── Date/time ──────────────────────────────────────────
+                  // ── Data e hora ─────────────────────────────────────────
                   _metaRow(
                     icon: Icons.calendar_today_outlined,
                     child: GestureDetector(
@@ -740,7 +744,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
                   ),
                   const SizedBox(height: 4),
 
-                  // ── Album ──────────────────────────────────────────────
+                  // ── Álbum ───────────────────────────────────────────────
                   _metaRow(
                     icon: Icons.photo_album_outlined,
                     child: GestureDetector(
@@ -762,7 +766,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
 
                   const SizedBox(height: 24),
 
-                  // ── Save button ────────────────────────────────────────
+                  // ── Botão de salvamento ─────────────────────────────────
                   GestureDetector(
                     onTap: _saving ? null : () => Future.microtask(_save),
                     child: Container(
@@ -800,6 +804,7 @@ class _NovoRegistroScreenState extends State<NovoRegistroScreen> {
   }
 
   Widget _metaRow({
+    // Cria uma linha padronizada para os metadados do momento.
     required IconData icon,
     required Widget child,
     Widget? trailing,

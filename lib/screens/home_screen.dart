@@ -1,12 +1,12 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:travel/database/database_helper.dart';
-import 'package:travel/screens/albuns_screen.dart';
-import 'package:travel/screens/album_detail_screen.dart';
-import 'package:travel/screens/novo_registro_screen.dart';
-import 'package:travel/screens/registro_detail_screen.dart';
-import 'package:travel/screens/locations_screen.dart';
-import 'package:travel/screens/insights_screen.dart';
+import 'package:chronicle/database/database_helper.dart';
+import 'package:chronicle/screens/albuns_screen.dart';
+import 'package:chronicle/screens/album_detail_screen.dart';
+import 'package:chronicle/screens/novo_registro_screen.dart';
+import 'package:chronicle/screens/registro_detail_screen.dart';
+import 'package:chronicle/screens/locations_screen.dart';
+import 'package:chronicle/screens/insights_screen.dart';
 
 const _green = Color(0xFF2E9E50);
 const _greenLight = Color(0xFFE6F4EC);
@@ -17,7 +17,8 @@ const _t1 = Color(0xFF1C1C1E);
 const _t2 = Color(0xFF6C6C70);
 const _t3 = Color(0xFFAEAEB2);
 
-// ── Root shell: holds the bottom nav and swaps content ───────────────────────
+// ── Estrutura raiz: mantém a navegação inferior e alterna o conteúdo ─────────
+/// Estrutura principal que coordena as abas e o botão de novo registro.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
   @override
@@ -25,12 +26,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Which tab is active: 0=Home, 1=Timeline(Albums), 2=fab, 3=Map, 4=Insights
-  // We skip index 2 (the FAB slot) — real tabs are 0,1,3,4
+  // Aba ativa: 0=Início, 1=Álbuns, 2=botão central, 3=Mapa, 4=Análises.
+  // O índice 2 é reservado ao botão; as abas reais são 0, 1, 3 e 4.
   int _tab = 0;
   final List<int> _revisions = List<int>.filled(5, 0);
 
   void _refreshTabAfterNavigation(int tab) {
+    // Incrementa a revisão da aba para forçar uma nova consulta de dados.
     if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -39,22 +41,21 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.ensureVisualUpdate();
   }
 
-  // Navigate to a new screen and reload when back
+  // Abre uma nova tela e recarrega os dados ao retornar.
   Future<void> _go(Widget page) async {
     if (!mounted) return;
     final sourceTab = _tab;
     final route = MaterialPageRoute<void>(builder: (_) => page);
     await Navigator.push(context, route);
 
-    // Navigator.push completes when pop starts. On desktop, rebuilding the
-    // page underneath during the reverse transition can recursively update
-    // MouseTracker. Wait until the route is fully removed, then rebuild in a
-    // fresh frame.
+    // No desktop, aguarda a remoção completa da rota antes de reconstruir a
+    // tela inferior, evitando atualizações recursivas do rastreador do mouse.
     await route.completed;
     _refreshTabAfterNavigation(sourceTab);
   }
 
   Future<void> _openNovoRegistro() async {
+    // Abre o formulário de momento e atualiza a aba inicial após o retorno.
     if (!mounted) return;
     final sourceTab = _tab;
     final route = MaterialPageRoute<void>(
@@ -70,25 +71,27 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: _bg,
 
-      // ── Body: swap between tabs ──────────────────────────────────────────
+      // ── Corpo: alterna entre as abas ─────────────────────────────────────
       body: IndexedStack(
         index: _tab,
         children: [
           _HomeTab(
             key: ValueKey('home-${_revisions[0]}'),
             onNavigate: _go,
-          ), // tab 0
+          ), // Aba 0.
           _AlbunsTab(
             key: ValueKey('albums-${_revisions[1]}'),
             onNavigate: _go,
-          ), // tab 1
-          const SizedBox.shrink(), // tab 2 = FAB placeholder (never shown)
-          LocationsScreen(key: ValueKey('locations-${_revisions[3]}')), // tab 3
-          InsightsScreen(key: ValueKey('insights-${_revisions[4]}')), // tab 4
+          ), // Aba 1.
+          const SizedBox.shrink(), // Espaço da aba 2, nunca exibido.
+          LocationsScreen(
+            key: ValueKey('locations-${_revisions[3]}'),
+          ), // Aba 3.
+          InsightsScreen(key: ValueKey('insights-${_revisions[4]}')), // Aba 4.
         ],
       ),
 
-      // ── FAB: the green + button in the notch ────────────────────────────
+      // ── Botão central verde encaixado no recorte ────────────────────────
       floatingActionButton: FloatingActionButton(
         onPressed: _openNovoRegistro,
         backgroundColor: _green,
@@ -98,22 +101,23 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-      // ── Bottom navigation bar with notch ────────────────────────────────
+      // ── Barra de navegação inferior com recorte ─────────────────────────
       bottomNavigationBar: BottomAppBar(
         color: _card,
         elevation: 8,
         notchMargin: 8,
-        shape: const CircularNotchedRectangle(), // creates the notch for FAB
+        shape:
+            const CircularNotchedRectangle(), // Cria o recorte do botão central.
         child: SizedBox(
           height: 60,
           child: Row(
             children: [
-              // Left side: Home + Timeline
+              // Lado esquerdo: Início e Álbuns.
               _navItem(0, Icons.home_outlined, 'Home'),
               _navItem(1, Icons.photo_album_outlined, 'Álbuns'),
-              // Center gap for the FAB
+              // Espaço central reservado ao botão.
               const Expanded(child: SizedBox()),
-              // Right side: Map + Insights
+              // Lado direito: Mapa e Análises.
               _navItem(3, Icons.map_outlined, 'Locais'),
               _navItem(4, Icons.show_chart, 'Insights'),
             ],
@@ -123,10 +127,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Builds one nav item. Uses GestureDetector to avoid Windows mouse bug.
+  // Monta um item de navegação usando GestureDetector para evitar falha no Windows.
   Widget _navItem(int index, IconData icon, String label) {
-    // Map tab index to visual position (skipping the FAB slot at index 2)
-    // Tabs 0,1 are left; tabs 3,4 are right
+    // Converte o índice da aba em posição visual, ignorando o espaço central.
+    // As abas 0 e 1 ficam à esquerda; 3 e 4 ficam à direita.
     final active = _tab == index;
     return Expanded(
       child: GestureDetector(
@@ -155,7 +159,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ── Home tab content ──────────────────────────────────────────────────────────
+// ── Conteúdo da aba inicial ───────────────────────────────────────────────────
+/// Conteúdo inicial com resumo dos álbuns e momentos mais recentes.
 class _HomeTab extends StatefulWidget {
   final void Function(Widget) onNavigate;
   const _HomeTab({super.key, required this.onNavigate});
@@ -164,7 +169,7 @@ class _HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<_HomeTab> with AutomaticKeepAliveClientMixin {
-  // Keep this tab's scroll position alive when switching tabs
+  // Preserva a posição de rolagem ao alternar entre as abas.
   @override
   bool get wantKeepAlive => true;
 
@@ -179,6 +184,7 @@ class _HomeTabState extends State<_HomeTab> with AutomaticKeepAliveClientMixin {
   }
 
   Future<void> _load() async {
+    // Carrega os resumos apresentados na página inicial.
     setState(() => _loading = true);
     try {
       final a = await DatabaseHelper.instance.listarAlbuns();
@@ -220,7 +226,7 @@ class _HomeTabState extends State<_HomeTab> with AutomaticKeepAliveClientMixin {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
                 children: [
-                  // Albums header
+                  // Cabeçalho dos álbuns.
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -247,7 +253,7 @@ class _HomeTabState extends State<_HomeTab> with AutomaticKeepAliveClientMixin {
                   ),
                   const SizedBox(height: 12),
 
-                  // Album chips
+                  // Atalhos dos álbuns.
                   if (_albuns.isEmpty)
                     _emptyCard(
                       'Nenhum álbum ainda',
@@ -273,7 +279,7 @@ class _HomeTabState extends State<_HomeTab> with AutomaticKeepAliveClientMixin {
 
                   const SizedBox(height: 28),
 
-                  // Recent moments header
+                  // Cabeçalho dos momentos recentes.
                   const Text(
                     'Momentos recentes',
                     style: TextStyle(
@@ -350,7 +356,8 @@ class _HomeTabState extends State<_HomeTab> with AutomaticKeepAliveClientMixin {
   }
 }
 
-// ── Albums tab (reuses AlbunsScreen inline) ───────────────────────────────────
+// ── Aba de álbuns: reutiliza AlbunsScreen no corpo ────────────────────────────
+/// Adaptador que incorpora a tela de álbuns à navegação principal.
 class _AlbunsTab extends StatelessWidget {
   final void Function(Widget) onNavigate;
   const _AlbunsTab({super.key, required this.onNavigate});
@@ -358,7 +365,8 @@ class _AlbunsTab extends StatelessWidget {
   Widget build(BuildContext context) => const AlbunsScreen();
 }
 
-// ── Album chip ────────────────────────────────────────────────────────────────
+// ── Atalho de álbum ───────────────────────────────────────────────────────────
+/// Atalho visual usado para abrir rapidamente um álbum.
 class _AlbumChip extends StatelessWidget {
   final Album album;
   final VoidCallback onTap;
@@ -430,13 +438,15 @@ class _AlbumChip extends StatelessWidget {
   }
 }
 
-// ── Recent moment tile ────────────────────────────────────────────────────────
+// ── Item de momento recente ───────────────────────────────────────────────────
+/// Linha de resumo de um momento recente.
 class _MomentTile extends StatelessWidget {
   final Registro registro;
   final VoidCallback onTap;
   const _MomentTile({required this.registro, required this.onTap});
 
   String _fmt(String iso) {
+    // Converte a data persistida para o formato curto exibido na linha.
     final dt = DateTime.tryParse(iso);
     if (dt == null) return '';
     const m = [

@@ -1,11 +1,13 @@
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 
-/// Reads selected images so their bytes can be persisted directly in SQLite.
+/// Lê as imagens selecionadas para armazenar seus bytes diretamente no SQLite.
 class PhotoStorage {
+  // Classe utilitária: não deve ser instanciada.
   PhotoStorage._();
 
   static Future<List<Uint8List>> readAll(List<XFile> photos) async {
+    // Lê cada arquivo sequencialmente e rejeita imagens vazias ou demoradas.
     if (photos.isEmpty) return const [];
     final result = <Uint8List>[];
     for (final photo in photos) {

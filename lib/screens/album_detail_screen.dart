@@ -1,8 +1,8 @@
 // lib/screens/album_detail_screen.dart
 import 'package:flutter/material.dart';
-import 'package:travel/database/database_helper.dart';
-import 'package:travel/screens/novo_registro_screen.dart';
-import 'package:travel/screens/registro_detail_screen.dart';
+import 'package:chronicle/database/database_helper.dart';
+import 'package:chronicle/screens/novo_registro_screen.dart';
+import 'package:chronicle/screens/registro_detail_screen.dart';
 
 const _green = Color(0xFF2E9E50);
 const _greenLight = Color(0xFFE6F4EC);
@@ -36,6 +36,7 @@ const _icons = <String, IconData>{
   'music_note': Icons.music_note_outlined,
 };
 
+/// Lista os momentos pertencentes a um álbum específico.
 class AlbumDetailScreen extends StatefulWidget {
   final Album album;
   const AlbumDetailScreen({super.key, required this.album});
@@ -56,6 +57,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
   }
 
   Future<void> _load() async {
+    // Atualiza o álbum e seus registros a partir do banco.
     setState(() => _loading = true);
     final id = _album.id;
     final list = id != null
@@ -69,6 +71,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
   }
 
   void _addMomento() {
+    // Abre o formulário já associado ao álbum atual e recarrega ao retornar.
     Future.microtask(() async {
       if (!mounted) return;
       await Navigator.push(
@@ -82,6 +85,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
   }
 
   void _openMomento(Registro r) {
+    // Abre os detalhes do momento e atualiza a lista após possíveis alterações.
     Future.microtask(() async {
       if (!mounted) return;
       final full = r.id == null
@@ -197,13 +201,15 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen> {
   }
 }
 
-// ── Momento card ──────────────────────────────────────────────────────────────
+// ── Cartão de momento ─────────────────────────────────────────────────────────
 class _MomentoCard extends StatelessWidget {
+  // Cartão compacto usado para representar um registro na grade do álbum.
   final Registro registro;
   final VoidCallback onTap;
   const _MomentoCard({required this.registro, required this.onTap});
 
   String _fmt(String iso) {
+    // Formata a data ISO para uma data curta e legível.
     final dt = DateTime.tryParse(iso);
     if (dt == null) return '';
     const m = [
@@ -242,7 +248,7 @@ class _MomentoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Photo
+            // Foto exibida como destaque do momento.
             if (hasPhoto)
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(

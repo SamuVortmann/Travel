@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:travel/database/database_helper.dart';
+import 'package:chronicle/database/database_helper.dart';
 
 const _green = Color(0xFF2E9E50);
 const _bg = Color(0xFFF2F2F7);
@@ -12,6 +12,7 @@ const _t3 = Color(0xFFAEAEB2);
 const _red = Color(0xFFFF3B30);
 const _moods = ['😊', '😄', '😐', '😢', '😍'];
 
+/// Exibe todos os dados, fotos e ações disponíveis para um registro.
 class RegistroDetailScreen extends StatefulWidget {
   final Registro registro;
   const RegistroDetailScreen({super.key, required this.registro});
@@ -21,6 +22,7 @@ class RegistroDetailScreen extends StatefulWidget {
 }
 
 class _RegistroDetailScreenState extends State<RegistroDetailScreen> {
+  // Controla a galeria embutida e o índice da foto atualmente visível.
   late final PageController _pageController;
   int _photoIndex = 0;
 
@@ -40,6 +42,7 @@ class _RegistroDetailScreenState extends State<RegistroDetailScreen> {
   }
 
   String _fmt(String iso) {
+    // Converte a data ISO persistida em uma representação amigável.
     final dt = DateTime.tryParse(iso);
     if (dt == null) return '';
     const m = [
@@ -232,6 +235,7 @@ class _RegistroDetailScreenState extends State<RegistroDetailScreen> {
   }
 
   void _openFullscreen(int initialIndex) {
+    // Abre a galeria em tela cheia na foto selecionada.
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -258,6 +262,7 @@ class _RegistroDetailScreenState extends State<RegistroDetailScreen> {
   );
 
   Future<void> _confirmDelete() async {
+    // Exige confirmação explícita antes de remover o registro do banco.
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -282,6 +287,7 @@ class _RegistroDetailScreenState extends State<RegistroDetailScreen> {
   }
 }
 
+/// Galeria em tela cheia com navegação entre todas as fotos do registro.
 class _FullscreenGallery extends StatefulWidget {
   final List<Uint8List> photos;
   final int initialIndex;

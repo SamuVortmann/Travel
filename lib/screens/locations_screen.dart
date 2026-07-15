@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:travel/database/database_helper.dart';
-import 'package:travel/screens/registro_detail_screen.dart';
-import 'package:travel/utils/app_constants.dart';
+import 'package:chronicle/database/database_helper.dart';
+import 'package:chronicle/screens/registro_detail_screen.dart';
+import 'package:chronicle/utils/app_constants.dart';
 
+/// Agrupa e apresenta os momentos de acordo com o local informado.
 class LocationsScreen extends StatefulWidget {
   const LocationsScreen({super.key});
   @override
@@ -10,6 +11,7 @@ class LocationsScreen extends StatefulWidget {
 }
 
 class _LocationsScreenState extends State<LocationsScreen> {
+  // Mantém os registros carregados e o estado visual da consulta.
   bool _loading = true;
   List<Registro> _records = [];
 
@@ -20,6 +22,7 @@ class _LocationsScreenState extends State<LocationsScreen> {
   }
 
   Future<void> _load() async {
+    // Filtra os registros sem localização antes de atualizar a tela.
     final all = await DatabaseHelper.instance.listarRegistros();
     if (!mounted) return;
     setState(() {

@@ -1,9 +1,9 @@
 // lib/utils/app_constants.dart
-// Single source of truth for colors, icons, formatters, shared widgets.
+// Fonte central de cores, ícones, formatadores e widgets compartilhados.
 
 import 'package:flutter/material.dart';
 
-// ─── Colors ───────────────────────────────────────────────────────────────────
+// ─── Cores ────────────────────────────────────────────────────────────────────
 const kGreen = Color(0xFF2E9E50);
 const kGreenLight = Color(0xFFE6F4EC);
 const kGreenBorder = Color(0xFFB5D9C2);
@@ -17,7 +17,7 @@ const kTextSecondary = Color(0xFF6C6C70);
 const kTextTertiary = Color(0xFFAEAEB2);
 const kRed = Color(0xFFFF3B30);
 
-// ─── Icon map ─────────────────────────────────────────────────────────────────
+// ─── Mapa de ícones ───────────────────────────────────────────────────────────
 const Map<String, IconData> kIconMap = {
   'photo_album': Icons.photo_album_outlined,
   'snowflake': Icons.ac_unit,
@@ -40,7 +40,7 @@ const Map<String, IconData> kIconMap = {
 IconData iconFromString(String name) =>
     kIconMap[name] ?? Icons.photo_album_outlined;
 
-// ─── Color helpers ────────────────────────────────────────────────────────────
+// ─── Utilitários de cores ─────────────────────────────────────────────────────
 Color hexToColor(String hex) {
   try {
     return Color(int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
@@ -49,7 +49,7 @@ Color hexToColor(String hex) {
   }
 }
 
-// ─── Date formatters ──────────────────────────────────────────────────────────
+// ─── Formatadores de data ─────────────────────────────────────────────────────
 const _m = [
   'Jan',
   'Fev',
@@ -103,11 +103,11 @@ String formatMonthYear(String iso) {
   return '${_mF[dt.month - 1]} ${dt.year}';
 }
 
-// ─── Mood ─────────────────────────────────────────────────────────────────────
+// ─── Humor ────────────────────────────────────────────────────────────────────
 const kMoods = ['😊', '😄', '😐', '😢', '😍'];
 const kMoodLabels = ['Feliz', 'Muito feliz', 'Neutro', 'Triste', 'Apaixonado'];
 
-// ─── Snackbars ────────────────────────────────────────────────────────────────
+// ─── Barras de aviso ──────────────────────────────────────────────────────────
 void showSuccess(BuildContext ctx, String msg) =>
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
@@ -130,7 +130,8 @@ void showError(BuildContext ctx, String msg) =>
       ),
     );
 
-// ─── Shared widgets ───────────────────────────────────────────────────────────
+// ─── Widgets compartilhados ───────────────────────────────────────────────────
+/// Exibe uma mensagem padronizada quando uma tela não possui conteúdo.
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;

@@ -1,43 +1,45 @@
 import 'package:flutter/material.dart';
-import 'package:travel/database/database_helper.dart';
-import 'package:travel/screens/home_screen.dart';
+import 'package:chronicle/database/database_helper.dart';
+import 'package:chronicle/screens/home_screen.dart';
 
-// main() is the first function Flutter calls.
-// "async" means it can wait for things (like opening a database).
+// main() é a primeira função chamada pelo Flutter.
+// "async" indica que ela pode aguardar operações, como abrir o banco de dados.
 void main() {
-  // This line MUST come first when you use plugins (like sqflite).
-  // It makes sure Flutter's engine is ready before we do anything.
+  // Esta linha DEVE vir primeiro ao usar plugins, como o sqflite.
+  // Ela garante que o mecanismo do Flutter esteja pronto antes de qualquer ação.
   WidgetsFlutterBinding.ensureInitialized();
 
-  // SQLite works differently on Windows/Linux/Mac vs Android/iOS.
-  // This call sets up the right version for whatever platform we're on.
+  // O SQLite funciona de formas diferentes no desktop e em dispositivos móveis.
+  // Esta chamada configura a implementação correta para a plataforma atual.
   DatabaseHelper.initFfiIfNeeded();
 
-  // Draw immediately; SQLite opens on first use.
+  // Renderiza imediatamente; o SQLite é aberto no primeiro uso.
   runApp(const ChronicleApp());
 }
 
-// Every Flutter app has one root widget.
-// StatelessWidget = a widget that never changes after it's built.
+// Todo aplicativo Flutter possui um widget raiz.
+// StatelessWidget representa um widget sem estado mutável após sua construção.
+/// Widget raiz que configura tema, navegação e inicialização do aplicativo.
 class ChronicleApp extends StatelessWidget {
   const ChronicleApp({super.key});
 
-  // build() describes what this widget looks like / does.
-  // Flutter calls this whenever it needs to draw this widget.
+  // build() descreve a aparência e o comportamento deste widget.
+  // O Flutter chama este método sempre que precisa renderizar o widget.
   @override
   Widget build(BuildContext context) {
-    // MaterialApp sets up navigation, themes, and the overall app structure.
+    // MaterialApp configura a navegação, os temas e a estrutura geral do aplicativo.
     return MaterialApp(
       title: 'Chronicle',
-      debugShowCheckedModeBanner: false, // hides the red "DEBUG" banner
+      debugShowCheckedModeBanner:
+          false, // Oculta a faixa vermelha de depuração.
 
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2E9E50)),
         scaffoldBackgroundColor: const Color(0xFFF2F2F7),
 
-        // These two lines DISABLE the ripple/hover effect on buttons.
-        // This prevents a crash on Windows when navigating (mouse tracker bug).
+        // Estas duas linhas DESATIVAM os efeitos de toque e foco nos botões.
+        // Isso evita uma falha de rastreamento do mouse durante a navegação no Windows.
         splashFactory: NoSplash.splashFactory,
         highlightColor: Colors.transparent,
       ),
@@ -47,6 +49,7 @@ class ChronicleApp extends StatelessWidget {
   }
 }
 
+/// Bloqueia a tela inicial até que o banco esteja pronto para uso.
 class DatabaseGate extends StatefulWidget {
   const DatabaseGate({super.key});
 
@@ -64,6 +67,7 @@ class _DatabaseGateState extends State<DatabaseGate> {
   }
 
   void _retry() {
+    // Reinicia a validação após uma falha de abertura do banco.
     setState(() {
       _opening = DatabaseHelper.instance.reopenDatabase().then(
         (_) => DatabaseHelper.instance.validateDatabase(),

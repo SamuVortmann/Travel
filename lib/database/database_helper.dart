@@ -1,42 +1,43 @@
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart'; // needed for kIsWeb
-import 'package:path/path.dart'; // helps build file paths
-import 'package:sqflite/sqflite.dart'; // the SQLite plugin
-import 'package:sqflite_common_ffi/sqflite_ffi.dart'; // SQLite for Desktop
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart'; // SQLite for Web
-import 'package:travel/utils/legacy_photo_reader.dart';
+import 'package:flutter/foundation.dart'; // Disponibiliza a constante kIsWeb.
+import 'package:path/path.dart'; // Ajuda a montar caminhos de arquivos.
+import 'package:sqflite/sqflite.dart'; // Plugin do SQLite.
+import 'package:sqflite_common_ffi/sqflite_ffi.dart'; // SQLite para desktop.
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart'; // SQLite para web.
+import 'package:chronicle/utils/legacy_photo_reader.dart';
 
 // ============================================================
-// MODEL: Album
+// MODELO: Álbum
 //
-// A "model" is just a Dart class that represents one row
-// in a database table. Think of it like a spreadsheet row.
+// Um modelo é uma classe Dart que representa uma linha de uma tabela
+// do banco de dados, de forma semelhante a uma linha de planilha.
 //
-// Our albuns table has these columns:
+// A tabela albuns possui estas colunas:
 //   id, nome, descricao, icone, cor, criado_em
 // ============================================================
+/// Representa um álbum armazenado na tabela `albuns`.
 class Album {
-  final int? id; // null when not yet saved to DB
-  final String nome; // album name, e.g. "Viagem para Paris"
-  final String descricao; // optional description
-  final String icone; // icon name, e.g. "snowflake", "flight"
-  final String cor; // hex color, e.g. "#2E9E50"
-  final String criadoEm; // creation date in ISO format
+  final int? id; // Nulo enquanto o álbum ainda não foi salvo.
+  final String nome; // Nome do álbum, por exemplo, "Viagem para Paris".
+  final String descricao; // Descrição opcional.
+  final String icone; // Nome do ícone, como "snowflake" ou "flight".
+  final String cor; // Cor hexadecimal, por exemplo, "#2E9E50".
+  final String criadoEm; // Data de criação no formato ISO.
 
-  // "const" constructor = can be created at compile time (slightly faster)
+  // O construtor const permite criar a instância em tempo de compilação.
   const Album({
-    this.id, // optional — null means "not in DB yet"
-    required this.nome, // required = must be provided
-    this.descricao = '', // default value = empty string
+    this.id, // Opcional; nulo significa que ainda não está no banco.
+    required this.nome, // Obrigatório: deve ser informado pelo chamador.
+    this.descricao = '', // Usa uma string vazia como valor padrão.
     this.icone = 'photo_album',
     this.cor = '#2E9E50',
     required this.criadoEm,
   });
 
-  // toMap() converts this object into a Map (like a dictionary).
-  // SQLite needs Maps to insert/update rows.
+  // Converte o objeto em um mapa, formato usado pelo SQLite em inserções e alterações.
   Map<String, dynamic> toMap() => {
-    if (id != null) 'id': id, // only include id if it exists
+    if (id != null)
+      'id': id, // Inclui o identificador somente quando ele existe.
     'nome': nome,
     'descricao': descricao,
     'icone': icone,
@@ -44,9 +45,8 @@ class Album {
     'criado_em': criadoEm,
   };
 
-  // factory constructor = a special constructor that returns an Album.
-  // fromMap() is the reverse of toMap() — turns a DB row into an Album object.
-  // The "?? ''" means: if the value is null, use '' instead (safe fallback).
+  // Reconstrói um álbum a partir de uma linha retornada pelo banco.
+  // O operador "??" fornece um valor seguro quando a coluna está nula.
   factory Album.fromMap(Map<String, dynamic> m) => Album(
     id: m['id'] as int?,
     nome: (m['nome'] as String?) ?? '',
@@ -56,8 +56,8 @@ class Album {
     criadoEm: (m['criado_em'] as String?) ?? DateTime.now().toIso8601String(),
   );
 
-  // copyWith() returns a NEW Album with some fields changed.
-  // Useful for editing — keeps fields you don't change the same.
+  // Cria um novo álbum alterando apenas os campos informados.
+  // É útil na edição porque preserva os demais valores.
   Album copyWith({
     String? nome,
     String? descricao,
@@ -74,28 +74,29 @@ class Album {
 }
 
 // ============================================================
-// MODEL: Registro (a "moment" saved inside an album)
+// MODELO: Registro (um momento salvo dentro de um álbum)
 //
-// Our registros table columns:
+// A tabela registros possui estas colunas:
 //   id, album_id, titulo, descricao, local, data_hora,
 //   humor, tags, album
 //
-// Photos are stored in a SEPARATE table (fotos) and loaded
-// alongside the registro as SQLite BLOB values.
+// As fotos ficam em uma tabela SEPARADA e são carregadas junto
+// do registro como valores BLOB do SQLite.
 // ============================================================
+/// Representa um momento e suas fotos armazenados no banco.
 class Registro {
   final int? id;
-  final int? albumId; // which album this belongs to (can be null)
-  final String titulo; // e.g. "Pôr do sol na praia"
+  final int? albumId; // Identifica o álbum relacionado; pode ser nulo.
+  final String titulo; // Por exemplo, "Pôr do sol na praia".
   final String descricao;
-  final String local; // e.g. "Florianópolis"
+  final String local; // Por exemplo, "Florianópolis".
   final double? latitude;
   final double? longitude;
-  final String dataHora; // ISO-8601 date string
+  final String dataHora; // Data e hora no formato ISO-8601.
   final int humor; // 0=😊 1=😄 2=😐 3=😢 4=😍
-  final String tags; // not used for now, kept for future
-  final String album; // album name saved here too (for quick display)
-  final List<Uint8List> fotos; // image bytes stored entirely in SQLite
+  final String tags; // Reservado para uso futuro.
+  final String album; // Nome duplicado para agilizar a exibição.
+  final List<Uint8List> fotos; // Bytes das imagens armazenados no SQLite.
 
   const Registro({
     this.id,
@@ -109,10 +110,11 @@ class Registro {
     required this.humor,
     required this.tags,
     required this.album,
-    this.fotos = const [], // default = no photos
+    this.fotos = const [], // Por padrão, o registro não possui fotos.
   });
 
   Map<String, dynamic> toMap() => {
+    // Serializa apenas os campos mantidos na tabela principal de registros.
     if (id != null) 'id': id,
     'album_id': albumId,
     'titulo': titulo,
@@ -127,6 +129,7 @@ class Registro {
   };
 
   factory Registro.fromMap(Map<String, dynamic> m, List<Uint8List> fotos) =>
+      // Reconstrói o registro combinando a linha principal com suas fotos.
       Registro(
         id: m['id'] as int?,
         albumId: m['album_id'] as int?,
@@ -145,27 +148,27 @@ class Registro {
 }
 
 // ============================================================
-// DATABASE HELPER
+// AUXILIAR DO BANCO DE DADOS
 //
-// This is a SINGLETON — there is only ONE instance of this
-// class in the entire app. We access it via DatabaseHelper.instance
+// Esta classe usa o padrão SINGLETON: existe apenas uma instância
+// em todo o aplicativo, acessada por DatabaseHelper.instance.
 //
-// Why singleton? Because you should only have one connection
-// to a SQLite database at a time.
+// Isso mantém uma única conexão ativa com o banco SQLite.
 // ============================================================
+/// Centraliza a conexão, o esquema e todas as operações do SQLite.
 class DatabaseHelper {
-  // Private constructor — nobody can do "DatabaseHelper()" from outside
+  // O construtor privado impede a criação de instâncias externas.
   DatabaseHelper._();
 
-  // The single instance, created once and reused everywhere
+  // Instância única, criada uma vez e reutilizada em todo o aplicativo.
   static final DatabaseHelper instance = DatabaseHelper._();
 
-  // The actual database object — null until first use
+  // Conexão real com o banco; permanece nula até o primeiro uso.
   static Future<Database>? _databaseFuture;
 
-  // ── Platform setup ──────────────────────────────────────────
-  // On Android/iOS: sqflite works out of the box, no setup needed.
-  // On Windows/Linux/macOS: we need to use the FFI (desktop) version.
+  // ── Configuração por plataforma ─────────────────────────────
+  // No Android e iOS, o sqflite não exige configuração adicional.
+  // No Windows, Linux e macOS, é usada a implementação FFI.
   static void initFfiIfNeeded() {
     if (kIsWeb) {
       databaseFactory = databaseFactoryFfiWeb;
@@ -174,18 +177,20 @@ class DatabaseHelper {
     if (defaultTargetPlatform == TargetPlatform.windows ||
         defaultTargetPlatform == TargetPlatform.linux ||
         defaultTargetPlatform == TargetPlatform.macOS) {
-      sqfliteFfiInit(); // initialize the desktop SQLite
-      databaseFactory = databaseFactoryFfi; // tell sqflite to use it
+      sqfliteFfiInit(); // Inicializa o SQLite para desktop.
+      databaseFactory =
+          databaseFactoryFfi; // Define a fábrica usada pelo sqflite.
     }
-    // On mobile (Android, iOS) — do nothing. sqflite handles it automatically.
+    // Em dispositivos móveis, o sqflite cuida da inicialização automaticamente.
   }
 
-  // ── Database getter ─────────────────────────────────────────
-  // "get database" is a getter — accessed like a property: DatabaseHelper.instance.database
-  // "_db ??= ..." means: if _db is null, initialize it. Otherwise, return it.
+  // ── Acesso ao banco ─────────────────────────────────────────
+  // O getter permite acessar a conexão como DatabaseHelper.instance.database.
+  // Se _db estiver nulo, a conexão é inicializada; caso contrário, é reutilizada.
   Future<Database> get database => _databaseFuture ??= _initDb();
 
   Future<Database> reopenDatabase() async {
+    // Descarta a conexão armazenada e tenta abrir uma nova instância.
     final current = _databaseFuture;
     _databaseFuture = null;
     if (current != null) {
@@ -193,36 +198,42 @@ class DatabaseHelper {
         final db = await current.timeout(const Duration(seconds: 2));
         await db.close();
       } catch (_) {
-        // A failed or blocked opening has no usable connection to close.
+        // Uma abertura bloqueada ou com falha não produz conexão para fechar.
       }
     }
     return database;
   }
 
   Future<void> validateDatabase() async {
+    // Confirma que o banco abre e que o esquema mínimo está disponível.
     final db = await database.timeout(const Duration(seconds: 15));
     await db.rawQuery('SELECT COUNT(*) FROM albuns');
     await db.rawQuery('SELECT COUNT(*) FROM registros');
   }
 
-  // Opens the database file (creates it if it doesn't exist yet)
+  // Abre o arquivo do banco e o cria caso ainda não exista.
   Future<Database> _initDb() async {
-    final dir = await getDatabasesPath(); // gets the app's data folder
-    final path = join(dir, 'chronicle.db'); // builds the full file path
+    final dir =
+        await getDatabasesPath(); // Obtém a pasta de dados do aplicativo.
+    final path = join(
+      dir,
+      'chronicle.db',
+    ); // Monta o caminho completo do arquivo.
 
     return openDatabase(
       path,
-      version: 6, // bump this number when you change the schema
+      version: 6, // Deve aumentar sempre que o esquema for alterado.
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
-      onCreate: _onCreate, // called when DB is created for the first time
-      onUpgrade: _onUpgrade, // called when version number increases
+      onCreate: _onCreate, // Chamado na primeira criação do banco.
+      onUpgrade: _onUpgrade, // Chamado quando a versão aumenta.
       onOpen: _repairSchema,
     );
   }
 
   Future<void> _repairSchema(Database db) async {
+    // Recria estruturas ausentes sem apagar os dados existentes.
     await _createTableAlbuns(db);
     await _createTableRegistros(db);
     await _createTableFotos(db);
@@ -231,29 +242,29 @@ class DatabaseHelper {
     await _ensureCompatiblePhotoTable(db);
   }
 
-  // Called once when the database is brand new
+  // Executado uma única vez quando o banco é criado.
   Future<void> _onCreate(Database db, int version) async {
     await _createTableAlbuns(db);
     await _createTableRegistros(db);
     await _createTableFotos(db);
-    await _seedDefaultAlbums(db); // add 4 starter albums
+    await _seedDefaultAlbums(db); // Adiciona quatro álbuns iniciais.
   }
 
-  // Called when we increase the version number (schema migration)
+  // Executa as migrações quando a versão do esquema aumenta.
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // Version 1 didn't have the albuns table
+      // A versão 1 ainda não possuía a tabela albuns.
       await _createTableAlbuns(db);
       await _seedDefaultAlbums(db);
       try {
-        // Add the album_id column to existing registros table
+        // Adiciona album_id à tabela de registros existente.
         await db.execute('ALTER TABLE registros ADD COLUMN album_id INTEGER');
       } catch (_) {
-        // Ignore error if column already exists
+        // Ignora a falha caso a coluna já exista.
       }
     }
     if (oldVersion < 3) {
-      // Link legacy moments to albums by matching the stored album name
+      // Associa momentos antigos pelo nome de álbum armazenado.
       await db.execute('''
         UPDATE registros
         SET album_id = (
@@ -281,12 +292,14 @@ class DatabaseHelper {
     String column,
     String type,
   ) async {
+    // Consulta a estrutura da tabela antes de executar uma alteração segura.
     final columns = await db.rawQuery('PRAGMA table_info($table)');
     if (columns.any((row) => row['name'] == column)) return;
     await db.execute('ALTER TABLE $table ADD COLUMN $column $type');
   }
 
   Future<void> _ensureCompatiblePhotoTable(Database db) async {
+    // Garante que a tabela de fotos use a estrutura esperada pela versão atual.
     final columns = await db.rawQuery('PRAGMA table_info(fotos)');
     if (columns.isEmpty) {
       await _createTableFotos(db);
@@ -300,9 +313,8 @@ class DatabaseHelper {
     }
   }
 
-  // ── Table creation SQL ──────────────────────────────────────
-  // Each of these creates one table in the database.
-  // "IF NOT EXISTS" prevents errors if the table already exists.
+  // ── SQL de criação das tabelas ──────────────────────────────
+  // Cada método cria uma tabela; IF NOT EXISTS evita erros de duplicidade.
 
   Future<void> _createTableAlbuns(Database db) => db.execute('''
     CREATE TABLE IF NOT EXISTS albuns (
@@ -332,7 +344,7 @@ class DatabaseHelper {
     )
   ''');
 
-  // Fotos are stored separately so one registro can have many photos
+  // As fotos ficam separadas para que um registro possa possuir várias imagens.
   Future<void> _createTableFotos(Database db) => db.execute('''
     CREATE TABLE IF NOT EXISTS fotos (
       id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -343,7 +355,7 @@ class DatabaseHelper {
     )
   ''');
 
-  // Insert 4 starter albums so new users have something to see
+  // Insere quatro álbuns iniciais para apresentar conteúdo aos novos usuários.
   Future<void> _seedDefaultAlbums(Database db) async {
     final now = DateTime.now().toIso8601String();
     for (final a in [
@@ -356,10 +368,11 @@ class DatabaseHelper {
     }
   }
 
-  // ── ALBUM CRUD ──────────────────────────────────────────────
-  // CRUD = Create, Read, Update, Delete — the 4 basic DB operations
+  // ── CRUD DE ÁLBUNS ──────────────────────────────────────────
+  // CRUD reúne as quatro operações básicas: criar, ler, atualizar e excluir.
 
   Future<int> inserirAlbum(Album a) async =>
+      // Insere um álbum e devolve o identificador criado pelo SQLite.
       (await database).insert('albuns', a.toMap());
 
   Future<List<Album>> listarAlbuns() async {
@@ -367,11 +380,12 @@ class DatabaseHelper {
       'albuns',
       orderBy: 'criado_em ASC',
     );
-    // .map() transforms each row (Map) into an Album object
+    // Transforma cada linha retornada em um objeto Album.
     return rows.map(Album.fromMap).toList();
   }
 
   Future<void> atualizarAlbum(Album a) async {
+    // Atualiza o álbum e mantém o nome duplicado nos registros sincronizado.
     final db = await database;
     await db.transaction((txn) async {
       await txn.update('albuns', a.toMap(), where: 'id = ?', whereArgs: [a.id]);
@@ -385,9 +399,11 @@ class DatabaseHelper {
   }
 
   Future<void> deletarAlbum(int id) async =>
+      // Remove o álbum identificado; as relações dependem das regras do esquema.
       (await database).delete('albuns', where: 'id = ?', whereArgs: [id]);
 
   Future<int> totalRegistrosPorAlbum(int albumId) async {
+    // Conta quantos momentos pertencem ao álbum informado.
     final res = await (await database).rawQuery(
       'SELECT COUNT(*) as c FROM registros WHERE album_id = ?',
       [albumId],
@@ -396,6 +412,7 @@ class DatabaseHelper {
   }
 
   Future<Map<int, int>> contagemRegistrosPorAlbum() async {
+    // Retorna um mapa que associa cada álbum à sua quantidade de registros.
     final rows = await (await database).rawQuery(
       'SELECT album_id, COUNT(*) as c FROM registros '
       'WHERE album_id IS NOT NULL GROUP BY album_id',
@@ -406,6 +423,7 @@ class DatabaseHelper {
   }
 
   Future<List<Registro>> listarRegistrosPorAlbum(int albumId) async {
+    // Busca os registros do álbum em ordem cronológica decrescente.
     final db = await database;
     final rows = await db.query(
       'registros',
@@ -416,12 +434,12 @@ class DatabaseHelper {
     return _addPhotos(db, rows, photoLimit: 1);
   }
 
-  // ── REGISTRO CRUD ───────────────────────────────────────────
+  // ── CRUD DE REGISTROS ───────────────────────────────────────
 
   Future<int> inserirRegistro(Registro r) async {
     final db = await database;
     int newId = 0;
-    // transaction = all-or-nothing: if anything fails, nothing is saved
+    // A transação garante que todas as etapas sejam salvas ou nenhuma delas.
     await db.transaction((txn) async {
       newId = await txn.insert('registros', r.toMap());
       for (final bytes in r.fotos) {
@@ -436,12 +454,14 @@ class DatabaseHelper {
   }
 
   Future<List<Registro>> listarRegistros() async {
+    // Lista todos os registros, incluindo suas fotos.
     final db = await database;
     final rows = await db.query('registros', orderBy: 'data_hora DESC');
     return rows.map((row) => Registro.fromMap(row, const [])).toList();
   }
 
   Future<List<Registro>> listarRegistrosRecentes({int limite = 5}) async {
+    // Obtém somente os registros mais recentes até o limite solicitado.
     final db = await database;
     final rows = await db.query(
       'registros',
@@ -452,6 +472,7 @@ class DatabaseHelper {
   }
 
   Future<Registro?> buscarRegistro(int id) async {
+    // Procura um único registro e retorna nulo quando ele não existe.
     final db = await database;
     final rows = await db.query('registros', where: 'id = ?', whereArgs: [id]);
     if (rows.isEmpty) return null;
@@ -468,7 +489,7 @@ class DatabaseHelper {
         where: 'id = ?',
         whereArgs: [r.id],
       );
-      // Delete old photos then re-insert the new list
+      // Remove as fotos antigas antes de inserir a nova lista.
       await txn.delete('fotos', where: 'registro_id = ?', whereArgs: [r.id]);
       for (final bytes in r.fotos) {
         await txn.insert('fotos', {
@@ -481,9 +502,11 @@ class DatabaseHelper {
   }
 
   Future<void> deletarRegistro(int id) async =>
+      // Exclui o registro; as fotos relacionadas são removidas pelo esquema.
       (await database).delete('registros', where: 'id = ?', whereArgs: [id]);
 
   Future<int> totalRegistros() async {
+    // Calcula o número total de momentos salvos.
     final res = await (await database).rawQuery(
       'SELECT COUNT(*) as c FROM registros',
     );
@@ -491,15 +514,16 @@ class DatabaseHelper {
   }
 
   Future<int> totalRegistrosComFotos() async {
+    // Conta registros distintos que possuem pelo menos uma foto.
     final res = await (await database).rawQuery(
       'SELECT COUNT(DISTINCT registro_id) AS c FROM fotos',
     );
     return (res.first['c'] as int?) ?? 0;
   }
 
-  // ── Private helpers ─────────────────────────────────────────
+  // ── Métodos auxiliares privados ─────────────────────────────
 
-  // Takes a list of DB rows and loads photos for each registro
+  // Carrega as fotos correspondentes para cada linha de registro.
   Future<List<Registro>> _addPhotos(
     Database db,
     List<Map<String, dynamic>> rows, {
@@ -514,7 +538,7 @@ class DatabaseHelper {
     return result;
   }
 
-  // Gets all photo paths for one registro
+  // Obtém todas as fotos pertencentes a um registro.
   Future<List<Uint8List>> _fotosDoRegistro(
     Database db,
     int registroId, {
@@ -549,7 +573,7 @@ class DatabaseHelper {
             whereArgs: [row['id']],
           );
         } catch (_) {
-          // Missing legacy image files do not block the moment list.
+          // Arquivos antigos ausentes não impedem a listagem dos momentos.
         }
       }
     }

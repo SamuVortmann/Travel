@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:travel/database/database_helper.dart';
-import 'package:travel/utils/app_constants.dart';
+import 'package:chronicle/database/database_helper.dart';
+import 'package:chronicle/utils/app_constants.dart';
 
+/// Apresenta indicadores consolidados dos registros e álbuns do usuário.
 class InsightsScreen extends StatefulWidget {
   const InsightsScreen({super.key});
   @override
@@ -9,6 +10,7 @@ class InsightsScreen extends StatefulWidget {
 }
 
 class _InsightsScreenState extends State<InsightsScreen> {
+  // Dados usados para calcular e exibir os indicadores da tela.
   bool _loading = true;
   List<Registro> _records = [];
   List<Album> _albums = [];
@@ -21,6 +23,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
   }
 
   Future<void> _load() async {
+    // Carrega as fontes necessárias antes de atualizar a interface.
     final records = await DatabaseHelper.instance.listarRegistros();
     final albums = await DatabaseHelper.instance.listarAlbuns();
     final withPhotos = await DatabaseHelper.instance.totalRegistrosComFotos();
@@ -157,6 +160,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
   }
 
   Widget _stat(String label, String value, IconData icon) => Container(
+    // Monta um cartão individual de estatística.
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: kCard,

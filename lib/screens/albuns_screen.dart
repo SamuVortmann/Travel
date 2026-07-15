@@ -1,7 +1,7 @@
 // lib/screens/albuns_screen.dart
 import 'package:flutter/material.dart';
-import 'package:travel/database/database_helper.dart';
-import 'package:travel/screens/album_detail_screen.dart';
+import 'package:chronicle/database/database_helper.dart';
+import 'package:chronicle/screens/album_detail_screen.dart';
 
 const _green = Color(0xFF2E9E50);
 const _bg = Color(0xFFF2F2F7);
@@ -46,6 +46,7 @@ Color _hex(String h) {
   }
 }
 
+/// Gerencia a listagem, criação, edição e exclusão dos álbuns.
 class AlbunsScreen extends StatefulWidget {
   const AlbunsScreen({super.key});
   @override
@@ -64,6 +65,7 @@ class _AlbunsScreenState extends State<AlbunsScreen> {
   }
 
   Future<void> _load() async {
+    // Busca os álbuns e a quantidade de registros de cada um.
     setState(() => _loading = true);
     final db = DatabaseHelper.instance;
     final a = await db.listarAlbuns();
@@ -77,6 +79,7 @@ class _AlbunsScreenState extends State<AlbunsScreen> {
   }
 
   void _openCreate() {
+    // Abre o formulário vazio e recarrega a lista quando ele for fechado.
     Future.microtask(() async {
       if (!mounted) return;
       await showModalBottomSheet(
@@ -92,6 +95,7 @@ class _AlbunsScreenState extends State<AlbunsScreen> {
   }
 
   void _openEdit(Album a) {
+    // Abre o formulário preenchido com os dados do álbum selecionado.
     Future.microtask(() async {
       if (!mounted) return;
       await showModalBottomSheet(
@@ -107,6 +111,7 @@ class _AlbunsScreenState extends State<AlbunsScreen> {
   }
 
   void _delete(Album a) {
+    // Solicita confirmação antes de remover permanentemente o álbum.
     Future.microtask(() async {
       if (!mounted) return;
       final ok = await showDialog<bool>(
@@ -206,8 +211,9 @@ class _AlbunsScreenState extends State<AlbunsScreen> {
   }
 }
 
-// ── Album row ─────────────────────────────────────────────────────────────────
+// ── Linha de álbum ────────────────────────────────────────────────────────────
 class _AlbumRow extends StatelessWidget {
+  // Linha reutilizável com dados e ações de um álbum.
   final Album album;
   final int totalMomentos;
   final VoidCallback onTap, onEdit, onDelete;
@@ -290,8 +296,9 @@ class _AlbumRow extends StatelessWidget {
   }
 }
 
-// ── Album form sheet ──────────────────────────────────────────────────────────
+// ── Painel do formulário de álbum ─────────────────────────────────────────────
 class _AlbumFormSheet extends StatefulWidget {
+  // Painel inferior compartilhado pelos fluxos de criação e edição.
   final Album? album;
   final VoidCallback onSaved;
   const _AlbumFormSheet({this.album, required this.onSaved});
@@ -325,6 +332,7 @@ class _AlbumFormSheetState extends State<_AlbumFormSheet> {
   }
 
   Future<void> _save() async {
+    // Valida os campos e decide entre inserir ou atualizar o álbum.
     final nome = _nomeCtrl.text.trim();
     if (nome.isEmpty) return;
     setState(() => _saving = true);
@@ -381,7 +389,7 @@ class _AlbumFormSheetState extends State<_AlbumFormSheet> {
             ),
             const SizedBox(height: 16),
 
-            // Preview icon
+            // Prévia do ícone selecionado.
             Center(
               child: Container(
                 width: 64,
@@ -471,7 +479,7 @@ class _AlbumFormSheetState extends State<_AlbumFormSheet> {
             ),
             const SizedBox(height: 14),
 
-            // Icon picker
+            // Seletor de ícone.
             const Text(
               'ÍCONE',
               style: TextStyle(
@@ -508,7 +516,7 @@ class _AlbumFormSheetState extends State<_AlbumFormSheet> {
             ),
             const SizedBox(height: 14),
 
-            // Color picker
+            // Seletor de cor.
             const Text(
               'COR',
               style: TextStyle(
@@ -554,7 +562,7 @@ class _AlbumFormSheetState extends State<_AlbumFormSheet> {
             ),
             const SizedBox(height: 20),
 
-            // Save button
+            // Botão para salvar o álbum.
             GestureDetector(
               onTap: _saving ? null : () => Future.microtask(_save),
               child: Container(
